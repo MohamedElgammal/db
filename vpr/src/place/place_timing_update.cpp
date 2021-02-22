@@ -26,6 +26,7 @@ static constexpr bool INCR_COMP_TD_COSTS = true;
  * PlacerCriticalities, PlacerSetupSlacks, and connection_timing_cost.
  */
 void initialize_timing_info(const PlaceCritParams& crit_params,
+                            const t_placer_opts& placer_opts,
                             const PlaceDelayModel* delay_model,
                             PlacerCriticalities* criticalities,
                             PlacerSetupSlacks* setup_slacks,
@@ -46,6 +47,7 @@ void initialize_timing_info(const PlaceCritParams& crit_params,
 
     //Perform first time update for all timing related classes
     perform_full_timing_update(crit_params,
+                               placer_opts,
                                delay_model,
                                criticalities,
                                setup_slacks,
@@ -74,6 +76,7 @@ void initialize_timing_info(const PlaceCritParams& crit_params,
  *          timing_cost, connection_setup_slack.
  */
 void perform_full_timing_update(const PlaceCritParams& crit_params,
+                                const t_placer_opts& placer_opts,
                                 const PlaceDelayModel* delay_model,
                                 PlacerCriticalities* criticalities,
                                 PlacerSetupSlacks* setup_slacks,
@@ -84,6 +87,8 @@ void perform_full_timing_update(const PlaceCritParams& crit_params,
     criticalities->enable_update();
     setup_slacks->enable_update();
     update_timing_classes(crit_params,
+                          placer_opts,
+                          delay_model,
                           timing_info,
                           criticalities,
                           setup_slacks,
@@ -124,6 +129,8 @@ void perform_full_timing_update(const PlaceCritParams& crit_params,
  * changed connection delays are a direct result of moved blocks in try_swap().
  */
 void update_timing_classes(const PlaceCritParams& crit_params,
+                           const t_placer_opts& placer_opts,
+                           const PlaceDelayModel* delay_model,
                            SetupTimingInfo* timing_info,
                            PlacerCriticalities* criticalities,
                            PlacerSetupSlacks* setup_slacks,
@@ -132,7 +139,7 @@ void update_timing_classes(const PlaceCritParams& crit_params,
     timing_info->update();
 
     /* Update the placer's criticalities (e.g. sharpen with crit_exponent). */
-    criticalities->update_criticalities(timing_info, crit_params);
+    criticalities->update_criticalities(timing_info, crit_params, placer_opts, delay_model);
 
     /* Update the placer's raw setup slacks. */
     setup_slacks->update_setup_slacks(timing_info);
@@ -341,7 +348,9 @@ static double comp_td_connection_cost(const PlaceDelayModel* delay_model,
     VTR_ASSERT_SAFE_MSG(p_timing_ctx.connection_delay[net][ipin] == comp_td_single_connection_delay(delay_model, net, ipin),
                         "Connection delays should already be updated");
 
-    double conn_timing_cost = place_crit.criticality(net, ipin) * p_timing_ctx.connection_delay[net][ipin];
+    float delay_budget = place_crit.get_delay_budget(net, ipin);
+
+    double conn_timing_cost = place_crit.criticality(net, ipin) * std::max(float(0), p_timing_ctx.connection_delay[net][ipin] - delay_budget);
 
     VTR_ASSERT_SAFE_MSG(std::isnan(p_timing_ctx.proposed_connection_delay[net][ipin]),
                         "Propsoed connection delay should already be invalidated");

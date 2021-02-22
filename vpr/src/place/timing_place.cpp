@@ -19,12 +19,14 @@
 #include "timing_place.h"
 
 #include "timing_info.h"
+#include "place_delay_model.h"
 
 ///@brief Allocates space for the timing_place_crit_ data structure.
 PlacerCriticalities::PlacerCriticalities(const ClusteredNetlist& clb_nlist, const ClusteredPinAtomPinsLookup& netlist_pin_lookup)
     : clb_nlist_(clb_nlist)
     , pin_lookup_(netlist_pin_lookup)
-    , timing_place_crit_(make_net_pins_matrix(clb_nlist_, std::numeric_limits<float>::quiet_NaN())) {
+    , timing_place_crit_(make_net_pins_matrix(clb_nlist_, std::numeric_limits<float>::quiet_NaN()))
+    , timing_place_delay_budget_(make_net_pins_matrix(clb_nlist_, std::numeric_limits<float>::quiet_NaN())) {
 }
 
 /**
@@ -37,7 +39,7 @@ PlacerCriticalities::PlacerCriticalities(const ClusteredNetlist& clb_nlist, cons
  *
  * If the criticality exponent has changed, we also need to update from scratch.
  */
-void PlacerCriticalities::update_criticalities(const SetupTimingInfo* timing_info, const PlaceCritParams& crit_params) {
+void PlacerCriticalities::update_criticalities(const SetupTimingInfo* timing_info, const PlaceCritParams& crit_params, const t_placer_opts& placer_opts, const PlaceDelayModel* delay_model) {
     /* If update is not enabled, exit the routine. */
     if (!update_enabled) {
         /* re-computation is required on the next iteration */
@@ -68,6 +70,7 @@ void PlacerCriticalities::update_criticalities(const SetupTimingInfo* timing_inf
         int pin_index_in_net = clb_nlist_.pin_net_index(clb_pin);
 
         float clb_pin_crit = calculate_clb_net_pin_criticality(*timing_info, pin_lookup_, clb_pin);
+        float conn_dely = comp_td_single_connection_delay(delay_model, clb_net, pin_index_in_net); 
 
         float new_crit = pow(clb_pin_crit, crit_params.crit_exponent);
         /*
@@ -91,6 +94,14 @@ void PlacerCriticalities::update_criticalities(const SetupTimingInfo* timing_inf
          * Since path criticality varies much more than timing, we "sharpen" timing
          * criticality by taking it to some power, crit_exponent (between 1 and 8 by default). */
         timing_place_crit_[clb_net][pin_index_in_net] = new_crit;
+
+        /* Calculating the delay budget */
+        if(placer_opts.place_delay_budget_algorithm == 0)
+            timing_place_delay_budget_[clb_net][pin_index_in_net] = 0; 
+        else if(placer_opts.place_delay_budget_algorithm == 1)
+            timing_place_delay_budget_[clb_net][pin_index_in_net] = 0.7 * conn_dely / clb_pin_crit;
+        else
+            timing_place_delay_budget_[clb_net][pin_index_in_net] = conn_dely / (clb_pin_crit + 0.4);
     }
 
     /* Criticalities updated. In sync with timing info.   */

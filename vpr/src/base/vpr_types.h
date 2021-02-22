@@ -1060,7 +1060,7 @@ struct t_placer_opts {
     float place_agent_epsilon;
     float place_agent_gamma;
     float place_dm_rlim;
-    //int place_timing_cost_func;
+    int place_delay_budget_algorithm;
     std::string place_reward_fun;
     float place_crit_limit;
 

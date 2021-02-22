@@ -1859,6 +1859,12 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .default_value("3.0")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    place_grp.add_argument(args.place_delay_budget_algorithm, "--place_delay_budget_algorithm")
+        .help(
+            "The delay budget used in placement")
+        .default_value("0")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     place_grp.add_argument(args.place_reward_fun, "--place_reward_fun")
         .help(
             "The reward function used by placement RL agent."

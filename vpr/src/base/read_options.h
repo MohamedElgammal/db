@@ -124,6 +124,7 @@ struct t_options {
     argparse::ArgValue<float> place_agent_epsilon;
     argparse::ArgValue<float> place_agent_gamma;
     argparse::ArgValue<float> place_dm_rlim;
+    argparse::ArgValue<int> place_delay_budget_algorithm;
     argparse::ArgValue<e_agent_algorithm> place_agent_algorithm;
     argparse::ArgValue<std::string> place_reward_fun;
     //argparse::ArgValue<int> place_timing_cost_func;

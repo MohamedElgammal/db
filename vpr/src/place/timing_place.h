@@ -109,6 +109,9 @@ class PlacerCriticalities {
     ///@brief Returns the criticality of the specified connection.
     float criticality(ClusterNetId net, int ipin) const { return timing_place_crit_[net][ipin]; }
 
+    ///@brief Return the delay budget of the specified connection
+    float get_delay_budget(ClusterNetId net, int ipin) const {return timing_place_delay_budget_[net][ipin];}
+
     /**
      * @brief Returns the range of clustered netlist pins (i.e. ClusterPinIds) which
      *        were modified by the last call to PlacerCriticalities::update_criticalities().
@@ -125,7 +128,7 @@ class PlacerCriticalities {
      * If out of sync, then the criticalities cannot be incrementally updated on
      * during the next timing analysis iteration.
      */
-    void update_criticalities(const SetupTimingInfo* timing_info, const PlaceCritParams& crit_params);
+    void update_criticalities(const SetupTimingInfo* timing_info, const PlaceCritParams& crit_params,  const t_placer_opts& placer_opts, const PlaceDelayModel* delay_model);
 
     ///@bried Enable the recompute_required flag to enforce from scratch update.
     void set_recompute_required();
@@ -155,6 +158,13 @@ class PlacerCriticalities {
      * Index range: [0..cluster_ctx.clb_nlist.nets().size()-1][1..num_pins-1]
      */
     ClbNetPinsMatrix<float> timing_place_crit_;
+
+    /**
+     * @brief The matrix that stores delay budget for each connection
+     *
+     * Indexrange: [0..cluster_ctx.clb_nlist.nets().size()-1][1..num_pins-1]
+     */
+     ClbNetPinsMatrix<float> timing_place_delay_budget_;
 
     /**
      * The criticality exponent when update_criticalites() was last called

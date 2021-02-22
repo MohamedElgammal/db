@@ -549,6 +549,7 @@ void try_place(const t_placer_opts& placer_opts,
         crit_params.crit_limit = placer_opts.place_crit_limit;
 
         initialize_timing_info(crit_params,
+                               placer_opts,
                                place_delay_model.get(),
                                placer_criticalities.get(),
                                placer_setup_slacks.get(),
@@ -848,6 +849,7 @@ void try_place(const t_placer_opts& placer_opts,
 
     if (placer_opts.place_algorithm.is_timing_driven()) {
         perform_full_timing_update(crit_params,
+                                   placer_opts,
                                    place_delay_model.get(),
                                    placer_criticalities.get(),
                                    placer_setup_slacks.get(),
@@ -859,7 +861,7 @@ void try_place(const t_placer_opts& placer_opts,
 
     //See if our latest checkpoint is better than the current placement solution
     if (placer_opts.place_checkpointing)
-        restore_best_placement(placement_checkpoint, timing_info, costs, placer_criticalities, placer_setup_slacks, place_delay_model, pin_timing_invalidator, crit_params);
+        restore_best_placement(placer_opts, placement_checkpoint, timing_info, costs, placer_criticalities, placer_setup_slacks, place_delay_model, pin_timing_invalidator, crit_params);
 
     if (placer_opts.placement_saves_per_temperature >= 1) {
         std::string filename = vtr::string_fmt("placement_%03d_%03d.place", state.num_temps + 1, 0);
@@ -965,6 +967,7 @@ static void outer_loop_update_timing_info(const t_placer_opts& placer_opts,
 
         //Update all timing related classes
         perform_full_timing_update(crit_params,
+                                   placer_opts,
                                    delay_model,
                                    criticalities,
                                    setup_slacks,
@@ -1049,6 +1052,7 @@ static void placement_inner_loop(const t_annealing_state* state,
 
                 //Update all timing related classes
                 perform_full_timing_update(crit_params,
+                                           placer_opts,
                                            delay_model,
                                            criticalities,
                                            setup_slacks,
@@ -1376,6 +1380,8 @@ static e_move_result try_swap(const t_annealing_state* state,
             criticalities->disable_update();
             setup_slacks->enable_update();
             update_timing_classes(crit_params,
+                                  placer_opts,
+                                  delay_model,
                                   timing_info,
                                   criticalities,
                                   setup_slacks,
@@ -1457,6 +1463,8 @@ static e_move_result try_swap(const t_annealing_state* state,
 
                 /* Revert the timing update */
                 update_timing_classes(crit_params,
+                                      placer_opts,
+                                      delay_model,
                                       timing_info,
                                       criticalities,
                                       setup_slacks,
@@ -1675,6 +1683,8 @@ static void update_td_delta_costs(const PlaceDelayModel* delay_model,
         /* Recompute all point to point connection delays for the net sinks. */
         for (size_t ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net).size(); ipin++) {
             float temp_delay = comp_td_single_connection_delay(delay_model, net, ipin);
+            float delay_budget = criticalities.get_delay_budget(net, ipin);
+ 
             /* If the delay hasn't changed, do not mark this pin as affected */
             if (temp_delay == connection_delay[net][ipin]) {
                 continue;
@@ -1683,7 +1693,7 @@ static void update_td_delta_costs(const PlaceDelayModel* delay_model,
             /* Calculate proposed delay and cost values */
             proposed_connection_delay[net][ipin] = temp_delay;
 
-            proposed_connection_timing_cost[net][ipin] = criticalities.criticality(net, ipin) * temp_delay;
+            proposed_connection_timing_cost[net][ipin] = criticalities.criticality(net, ipin) * max(float(0), temp_delay - delay_budget);
             delta_timing_cost += proposed_connection_timing_cost[net][ipin] - connection_timing_cost[net][ipin];
 
             /* Record this connection in blocks_affected.affected_pins */
@@ -1700,6 +1710,7 @@ static void update_td_delta_costs(const PlaceDelayModel* delay_model,
             int ipin = cluster_ctx.clb_nlist.pin_net_index(pin);
 
             float temp_delay = comp_td_single_connection_delay(delay_model, net, ipin);
+            float delay_budget = criticalities.get_delay_budget(net, ipin);
             /* If the delay hasn't changed, do not mark this pin as affected */
             if (temp_delay == connection_delay[net][ipin]) {
                 return;
@@ -1708,7 +1719,7 @@ static void update_td_delta_costs(const PlaceDelayModel* delay_model,
             /* Calculate proposed delay and cost values */
             proposed_connection_delay[net][ipin] = temp_delay;
 
-            proposed_connection_timing_cost[net][ipin] = criticalities.criticality(net, ipin) * temp_delay;
+            proposed_connection_timing_cost[net][ipin] = criticalities.criticality(net, ipin) * max(float(0), temp_delay - delay_budget);
             delta_timing_cost += proposed_connection_timing_cost[net][ipin] - connection_timing_cost[net][ipin];
 
             /* Record this connection in blocks_affected.affected_pins */
