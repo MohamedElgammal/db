@@ -1684,7 +1684,7 @@ static void update_td_delta_costs(const PlaceDelayModel* delay_model,
         for (size_t ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net).size(); ipin++) {
             float temp_delay = comp_td_single_connection_delay(delay_model, net, ipin);
             float delay_budget = criticalities.get_delay_budget(net, ipin);
- 
+
             /* If the delay hasn't changed, do not mark this pin as affected */
             if (temp_delay == connection_delay[net][ipin]) {
                 continue;

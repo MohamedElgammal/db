@@ -70,7 +70,7 @@ void PlacerCriticalities::update_criticalities(const SetupTimingInfo* timing_inf
         int pin_index_in_net = clb_nlist_.pin_net_index(clb_pin);
 
         float clb_pin_crit = calculate_clb_net_pin_criticality(*timing_info, pin_lookup_, clb_pin);
-        float conn_dely = comp_td_single_connection_delay(delay_model, clb_net, pin_index_in_net); 
+        float conn_dely = comp_td_single_connection_delay(delay_model, clb_net, pin_index_in_net);
 
         float new_crit = pow(clb_pin_crit, crit_params.crit_exponent);
         /*
@@ -96,9 +96,9 @@ void PlacerCriticalities::update_criticalities(const SetupTimingInfo* timing_inf
         timing_place_crit_[clb_net][pin_index_in_net] = new_crit;
 
         /* Calculating the delay budget */
-        if(placer_opts.place_delay_budget_algorithm == 0)
-            timing_place_delay_budget_[clb_net][pin_index_in_net] = 0; 
-        else if(placer_opts.place_delay_budget_algorithm == 1)
+        if (placer_opts.place_delay_budget_algorithm == 0)
+            timing_place_delay_budget_[clb_net][pin_index_in_net] = 0;
+        else if (placer_opts.place_delay_budget_algorithm == 1)
             timing_place_delay_budget_[clb_net][pin_index_in_net] = 0.7 * conn_dely / clb_pin_crit;
         else
             timing_place_delay_budget_[clb_net][pin_index_in_net] = conn_dely / (clb_pin_crit + 0.4);
