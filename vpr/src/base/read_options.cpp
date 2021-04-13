@@ -400,6 +400,8 @@ struct ParsePlaceAgentAlgorithm {
             conv_value.set_value(E_GREEDY);
         else if (str == "softmax")
             conv_value.set_value(SOFTMAX);
+        else if (str == "gradient")
+            conv_value.set_value(GRADIENT);
         else {
             std::stringstream msg;
             msg << "Invalid conversion from '" << str << "' to e_agent_algorithm (expected one of: " << argparse::join(default_choices(), ", ") << ")";
@@ -412,6 +414,8 @@ struct ParsePlaceAgentAlgorithm {
         ConvertedValue<std::string> conv_value;
         if (val == E_GREEDY)
             conv_value.set_value("e_greedy");
+        else if (val == GRADIENT)
+            conv_value.set_value("gradient");
         else {
             VTR_ASSERT(val == SOFTMAX);
             conv_value.set_value("softmax");
@@ -420,7 +424,7 @@ struct ParsePlaceAgentAlgorithm {
     }
 
     std::vector<std::string> default_choices() {
-        return {"e_greedy", "softmax"};
+        return {"e_greedy", "softmax", "gradient"};
     }
 };
 
@@ -1883,7 +1887,7 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
     place_grp.add_argument<e_agent_algorithm, ParsePlaceAgentAlgorithm>(args.place_agent_algorithm, "--place_agent_algorithm")
         .help("Controls which placement RL agent is used")
         .default_value("softmax")
-        .choices({"e_greedy", "softmax"})
+        .choices({"e_greedy", "softmax", "gradient"})
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     auto& place_timing_grp = parser.add_argument_group("timing-driven placement options");

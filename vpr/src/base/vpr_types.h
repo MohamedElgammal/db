@@ -935,7 +935,8 @@ enum e_pad_loc_type {
  */
 enum e_agent_algorithm {
     E_GREEDY,
-    SOFTMAX
+    SOFTMAX,
+    GRADIENT
 };
 
 ///@brief Used to calculate the inner placer loop's block swapping limit move_lim.

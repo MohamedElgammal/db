@@ -16,7 +16,7 @@ class KArmedBanditAgent {
   public:
     virtual ~KArmedBanditAgent() {}
     virtual size_t propose_action() = 0;
-    void process_outcome(double, e_reward_function);
+    virtual void process_outcome(double, e_reward_function) = 0;
 
   protected:
     float exp_alpha_ = -1;                  //Step size for q_ updates (< 0 implies use incremental average)
@@ -45,6 +45,7 @@ class EpsilonGreedyAgent : public KArmedBanditAgent {
     ~EpsilonGreedyAgent();
 
     size_t propose_action() override; //Returns the type of the next action the agent wishes to perform
+    void process_outcome(double, e_reward_function) override;
 
   public:
     void set_epsilon(float epsilon);
@@ -70,6 +71,7 @@ class SoftmaxAgent : public KArmedBanditAgent {
 
     //void process_outcome(double reward, std::string reward_fun) override; //Updates the agent based on the reward of the last proposed action
     size_t propose_action() override; //Returns the type of the next action the agent wishes to perform
+    void process_outcome(double, e_reward_function) override;
 
   public:
     void set_action_prob();
@@ -79,6 +81,33 @@ class SoftmaxAgent : public KArmedBanditAgent {
     std::vector<float> exp_q_;            //The clipped and scaled exponential of the estimated Q value for each action
     std::vector<float> action_prob_;      //The probability of choosing each action
     std::vector<float> cumm_action_prob_; //The accumulative probability of choosing each action
+};
+
+/**
+ * @brief Gradient agent implementation to address K-armed bandit problems
+ *
+ * In this class, the RL agent adresses the exploration-exploitation dilemma using Softmax
+ * where the probability of choosing each action propotional to the estimated Q value of
+ * this action. 
+ */
+class GradientAgent : public KArmedBanditAgent {
+  public:
+    GradientAgent(size_t num_actions);
+    ~GradientAgent();
+
+    //void process_outcome(double reward, std::string reward_fun) override; //Updates the agent based on the reward of the last proposed action
+    size_t propose_action() override; //Returns the type of the next action the agent wishes to perform
+    void process_outcome(double, e_reward_function) override;
+
+  public:
+    void set_action_prob();
+    void set_step(float gamma, int move_lim);
+
+  private:
+    std::vector<float> exp_q_;            //The clipped and scaled exponential of the estimated Q value for each action
+    std::vector<float> action_prob_;      //The probability of choosing each action
+    std::vector<float> cumm_action_prob_; //The accumulative probability of choosing each action
+    double average_reward_;
 };
 
 /**
@@ -97,6 +126,7 @@ class SimpleRLMoveGenerator : public MoveGenerator {
     // constructors using a pointer to the agent used
     SimpleRLMoveGenerator(std::unique_ptr<EpsilonGreedyAgent>& agent);
     SimpleRLMoveGenerator(std::unique_ptr<SoftmaxAgent>& agent);
+    SimpleRLMoveGenerator(std::unique_ptr<GradientAgent>& agent);
 
     // Updates affected_blocks with the proposed move, while respecting the current rlim
     e_create_move propose_move(t_pl_blocks_to_be_moved& blocks_affected, e_move_type& move_type, float rlim, const t_placer_opts& placer_opts, const PlacerCriticalities* criticalities);
